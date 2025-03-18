@@ -1,0 +1,256 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>向量大冒险</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #1e90ff; /* 蓝色背景 */
+            color: #fff;
+            margin: 0;
+            padding: 0;
+        }
+        .game-container {
+            margin: 50px auto;
+            padding: 20px;
+            background-color: rgba(255, 255, 255, 0.9);
+            border-radius: 10px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+            max-width: 600px;
+            color: #333;
+        }
+        .question {
+            font-size: 1.2em;
+            margin-bottom: 20px;
+        }
+        .options {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .options button {
+            padding: 10px 20px;
+            font-size: 1em;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            background-color: #4CAF50;
+            color: #fff;
+            transition: background-color 0.3s;
+        }
+        .options button:hover {
+            background-color: #45a049;
+        }
+        .score {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #4CAF50;
+            margin-bottom: 10px;
+        }
+        .timer {
+            font-size: 1.2em;
+            color: #ff6347;
+            margin-bottom: 10px;
+        }
+        .feedback {
+            font-size: 1.2em;
+            margin: 15px 0;
+            padding: 10px;
+            border-radius: 5px;
+            display: none;
+        }
+        .correct {
+            background-color: #dff0d8;
+            color: #3c763d;
+            border: 1px solid #d6e9c6;
+        }
+        .wrong {
+            background-color: #f2dede;
+            color: #a94442;
+            border: 1px solid #ebccd1;
+        }
+        @keyframes bounce {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+        }
+        .bounce {
+            animation: bounce 0.5s;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>向量大冒险</h1>
+        <div class="score">得分: <span id="score">0</span></div>
+        <div class="timer">剩余时间: <span id="timer">30</span> 秒</div>
+        <div class="feedback" id="feedback"></div>
+        <div class="question" id="question"></div>
+        <div class="options" id="options"></div>
+    </div>
+
+    <script>
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let timeLeft = 30;
+        let timerInterval;
+
+        const questions = [
+            {
+                question: '设基底向量 i = (1, 0), j = (0, 1)。向量 a = 2i + 3j，向量 b = i - j。a + b 等于？',
+                options: ['3i + 2j', '2i + 3j', 'i + 4j', '3i + 4j'],
+                answer: '3i + 2j'
+            },
+            {
+                question: '向量 a = 4i + 5j，向量 b = 2i + 3j。a - b 等于？',
+                options: ['2i + 2j', '3i + 2j', '2i + 3j', 'i + j'],
+                answer: '2i + 2j'
+            },
+            {
+                question: '向量 a = 3i + 4j，k = 2。k * a 等于？',
+                options: ['6i + 8j', '3i + 4j', '2i + 2j', '5i + 6j'],
+                answer: '6i + 8j'
+            },
+            {
+                question: '向量 a = 2i + 3j，向量 b = 4i + 5j。a · b 等于？',
+                options: ['23', '20', '22', '24'],
+                answer: '23'
+            },
+            {
+                question: '向量 a = -i + 2j，向量 b = 3i - 4j。a + b 等于？',
+                options: ['2i - 2j', '-2i + 2j', '4i - 6j', '2i + 6j'],
+                answer: '2i - 2j'
+            },
+            {
+                question: '向量 a = -i + 3j，向量 b = 2i + 4j。a · b 等于？',
+                options: ['10', '12', '14', '16'],
+                answer: '10'
+            },
+            {
+                question: '向量 a = 5i - 2j，k = 3。k * a 等于？',
+                options: ['15i - 6j', '5i - 2j', '8i + 1j', '2i + 5j'],
+                answer: '15i - 6j'
+            },
+            {
+                question: '向量 a = 4i + j，向量 b = i - 3j。a + b 等于？',
+                options: ['5i - 2j', '3i + 4j', '4i - 3j', '5i + 4j'],
+                answer: '5i - 2j'
+            },
+            {
+                question: '向量 a = 2i + 5j，向量 b = 3i - j。a - b 等于？',
+                options: ['-i + 6j', '5i + 4j', '-i + 4j', 'i + 6j'],
+                answer: '-i + 6j'
+            },
+            {
+                question: '向量 a = i + 4j，向量 b = 2i + 3j。a · b 等于？',
+                options: ['14', '11', '10', '15'],
+                answer: '14'
+            },
+            {
+                question: '向量 a = 3i - 2j，k = -1。k * a 等于？',
+                options: ['-3i + 2j', '3i - 2j', '-3i - 2j', '2i - 3j'],
+                answer: '-3i + 2j'
+            },
+            {
+                question: '向量 a = 4i + 7j，向量 b = 2i - j。a · b 等于？',
+                options: ['1', '15', '-3', '8'],
+                answer: '1'
+            }
+        ];
+
+        // 初始化游戏
+        function initGame() {
+            // 打乱题目顺序
+            questions.sort(() => Math.random() - 0.5);
+            loadQuestion();
+        }
+
+        // 加载题目
+        function loadQuestion() {
+            const questionElement = document.getElementById('question');
+            const optionsElement = document.getElementById('options');
+            const currentQuestion = questions[currentQuestionIndex];
+
+            questionElement.textContent = currentQuestion.question;
+            optionsElement.innerHTML = '';
+
+            // 打乱选项顺序
+            const shuffledOptions = shuffleArray(currentQuestion.options);
+            shuffledOptions.forEach(option => {
+                const button = document.createElement('button');
+                button.textContent = option;
+                button.onclick = () => selectAnswer(option);
+                optionsElement.appendChild(button);
+            });
+
+            startTimer();
+        }
+
+        // 打乱数组
+        function shuffleArray(array) {
+            return array.sort(() => Math.random() - 0.5);
+        }
+
+        // 显示反馈
+        function showFeedback(message, isCorrect) {
+            const feedback = document.getElementById('feedback');
+            feedback.style.display = 'block';
+            feedback.className = isCorrect ? 'correct' : 'wrong';
+            feedback.textContent = message;
+
+            setTimeout(() => {
+                feedback.style.display = 'none';
+            }, 2000);
+        }
+
+        // 选择答案
+        function selectAnswer(selectedAnswer) {
+            clearInterval(timerInterval);
+            const currentQuestion = questions[currentQuestionIndex];
+
+            if (selectedAnswer === currentQuestion.answer) {
+                score += 10;
+                document.getElementById('score').textContent = score;
+                showFeedback('✓ 回答正确！+10分', true);
+            } else {
+                let message = `✗ 回答错误`;
+                if (selectedAnswer !== null) {
+                    message += `，正确答案是：${currentQuestion.answer}`;
+                }
+                showFeedback(message, false);
+            }
+
+            currentQuestionIndex++;
+            if (currentQuestionIndex < questions.length) {
+                setTimeout(loadQuestion, 2000); // 2秒后加载下一题
+            } else {
+                setTimeout(() => {
+                    alert(`游戏结束！你的最终得分是: ${score}`);
+                }, 500);
+            }
+        }
+
+        // 开始计时
+        function startTimer() {
+            timeLeft = 30;
+            document.getElementById('timer').textContent = timeLeft;
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                document.getElementById('timer').textContent = timeLeft;
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    showFeedback('⏰ 时间到！自动进入下一题', false);
+                    selectAnswer(null);
+                }
+            }, 1000);
+        }
+
+        // 开始游戏
+        initGame();
+    </script>
+</body>
+</html>
